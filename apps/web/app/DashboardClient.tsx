@@ -4,6 +4,28 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 
+type ErrorEvent = {
+  payload: string | null;
+  headers: string | null;
+};
+
+type ErrorGroup = {
+  id: string;
+  message: string;
+  method: string;
+  route: string;
+  fingerprint: string;
+  updatedAt: Date;
+  events: ErrorEvent[];
+  _count: { events: number };
+};
+
+type ReplayResult = {
+  status?: number | string;
+  headers?: unknown;
+  data?: unknown;
+};
+
 function timeAgo(date: Date) {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
   let interval = seconds / 31536000;
@@ -19,11 +41,11 @@ function timeAgo(date: Date) {
   return Math.floor(seconds) + " seconds ago";
 }
 
-export default function DashboardClient({ errorGroups }: { errorGroups: any[] }) {
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(errorGroups[0] || null);
+export default function DashboardClient({ errorGroups }: { errorGroups: ErrorGroup[] }) {
+  const [selectedGroup, setSelectedGroup] = useState<ErrorGroup | null>(errorGroups[0] || null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isReplaying, setIsReplaying] = useState(false);
-  const [replayResult, setReplayResult] = useState<any | null>(null);
+  const [replayResult, setReplayResult] = useState<ReplayResult | null>(null);
 
   const filteredGroups = errorGroups.filter((group) => 
     group.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,15 +77,15 @@ export default function DashboardClient({ errorGroups }: { errorGroups: any[] })
 
       const result = await response.json();
       setReplayResult(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ Falha na requisição de replay:", err);
-      setReplayResult({ status: 'Error', data: err.message, headers: {} });
+      setReplayResult({ status: 'Error', data: err instanceof Error ? err.message : String(err), headers: {} });
     } finally {
       setIsReplaying(false);
     }
   };
 
-  const formatPayload = (str: string) => {
+  const formatPayload = (str: string | null | undefined) => {
     if (!str) return "{}";
     try {
       return JSON.stringify(JSON.parse(str), null, 2);
