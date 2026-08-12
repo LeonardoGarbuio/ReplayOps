@@ -23,7 +23,7 @@ graph TD
     Dev[Developer] -->|Views Error| Web[Web Dashboard]
     Web -->|Fetches Data| DB
     Web -->|POST /api/replay| API
-    API -->|Replays Request (SSRF Protected)| App
+    API -->|"Replays Request (SSRF Protected)"| App
 ```
 
 ## 🚀 Quick Start (Running Locally)
