@@ -1,159 +1,81 @@
-# Turborepo starter
+# 🚀 ReplayOps
 
-This Turborepo starter is maintained by the Turborepo core team.
+ReplayOps is an observability and debugging platform built for modern development teams. It captures failing API requests in production, securely stores their contexts, and provides a powerful "time-travel" dashboard to replay and debug those exact requests locally or in isolated environments.
 
-## Using this example
+## 🏗️ Architecture
 
-Run the following command:
+This project is a Monorepo managed with [Turborepo](https://turbo.build/repo), consisting of:
 
-```sh
-npx create-turbo@latest
+- **`apps/web`**: A modern Next.js 14 dashboard (App Router) for visualizing errors and triggering replays.
+- **`apps/api`**: A blazing-fast Express backend for ingesting events and routing replays safely.
+- **`packages/db`**: A centralized Prisma schema and database client using PostgreSQL.
+- **`packages/replayops-sdk-node`**: An Express middleware SDK that automatically intercepts failures and reports them.
+
+### 📐 System Flow
+
+```mermaid
+graph TD
+    Client[Client Application] -->|Fails| App[Backend Server]
+    App -->|SDK intercepts| SDK[ReplayOps SDK]
+    SDK -->|POST /api/ingest| API[ReplayOps API]
+    API -->|Validates API Key & Upserts| DB[(PostgreSQL)]
+    
+    Dev[Developer] -->|Views Error| Web[Web Dashboard]
+    Web -->|Fetches Data| DB
+    Web -->|POST /api/replay| API
+    API -->|Replays Request (SSRF Protected)| App
 ```
 
-## What's inside?
+## 🚀 Quick Start (Running Locally)
 
-This Turborepo includes the following packages/apps:
+To get ReplayOps running on your machine, follow these steps:
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+### 1. Environment Setup
+Copy the example environment file and configure it:
+```bash
+cp .env.example .env
 ```
 
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-npm dlx turbo build
-npm exec turbo build
+### 2. Start the Database
+The project uses a PostgreSQL database. You can easily start it using Docker:
+```bash
+docker-compose up -d
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+### 3. Install Dependencies
+Run the installation command at the root of the project to install packages for all workspaces:
+```bash
+npm install
 ```
 
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-npm exec turbo build --filter=docs
-npm exec turbo build --filter=docs
+### 4. Setup Prisma Schema
+Synchronize your database with the Prisma schema (this will create all necessary tables):
+```bash
+npx prisma db push --schema=packages/db/prisma/schema.prisma
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+### 5. Start the Platform
+Run the development server. This will concurrently start both the `web` dashboard and the `api` ingestion server:
+```bash
+npm run dev
 ```
 
-Without global `turbo`, use your package manager:
+The Dashboard will be available at: [http://localhost:3000](http://localhost:3000)
 
-```sh
-cd my-turborepo
-npx turbo dev
-npm exec turbo dev
-npm exec turbo dev
+## 🧪 Testing the SDK
+
+To see the platform in action, we have included a testing script that simulates a failing backend server using our SDK.
+
+In a new terminal window, navigate to the SDK package and run the test script:
+```bash
+cd packages/replayops-sdk-node
+npx tsx test-sdk.ts
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
+Then, trigger a deliberate error by making a POST request to the test server:
+```bash
+# Se estiver no Windows PowerShell, use 'curl.exe'
+curl -X POST http://localhost:3002/test-error
 ```
 
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-npm exec turbo dev --filter=web
-npm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-npm exec turbo login
-npm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-npm exec turbo link
-npm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Head over to your Dashboard at `http://localhost:3000` to see the error appear in real-time, and click **Replay Event** to reconstruct and re-execute the failed request!

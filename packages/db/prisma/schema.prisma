@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  apiKey    String   @unique @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  errorGroups ErrorGroup[]
+}
+
+model ErrorGroup {
+  id          String   @id @default(cuid())
+  projectId   String
+  fingerprint String
+  message     String
+  method      String
+  route       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  status      String   @default("OPEN") // OPEN, RESOLVED, IGNORED
+
+  project Project @relation(fields: [projectId], references: [id])
+  events  Event[]
+
+  @@unique([projectId, fingerprint])
+}
+
+model Event {
+  id           String   @id @default(cuid())
+  errorGroupId String
+  payload      String?
+  headers      String?
+  queryParams  String?
+  status       Int
+  responseTime Int
+  stackTrace   String?
+  context      String?
+  createdAt    DateTime @default(now())
+
+  errorGroup ErrorGroup @relation(fields: [errorGroupId], references: [id])
+}
